@@ -1,10 +1,9 @@
 const fs = require('fs');
 const overpass = require('query-overpass');
-const yargs = require('yargs');
+// const yargs = require('yargs');
 const yesno = require('yesno');
 const { exit } = require('process');
 
-let toFile = false;
 let argv = require('yargs/yargs')(process.argv.slice(2))
     .option('save-query-result', {
         alias: 'r',
@@ -13,23 +12,17 @@ let argv = require('yargs/yargs')(process.argv.slice(2))
     .option('out', {
         alias: 'o',
         type: 'string',
-        default: '()()'
+        default: "out.csv"
     })
     .option('file', {
         alias: 'f',
         type: 'string'
     })
-    .check((argv) => {
-        if (argv.out === yargs.getOptions().default.out) {
-            argv.out = "out.csv";
-        }
-        else {
-            toFile = true;
-        }
-        return true;
-    })
     .argv;
 
+// Dirty fix to only use the 'out' option (or its default) if the option is present at all.
+// Needs to support all of its aliases too...
+const toFile = process.argv.indexOf('-o') > -1 || process.argv.indexOf('--out') > -1;
 
 //-----------------------------------------//
 function parseJsonFromFile(fileName) {
