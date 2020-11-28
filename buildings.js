@@ -6,7 +6,7 @@ const { exit } = require('process');
 
 let argv = require('yargs/yargs')(process.argv.slice(2))
     .option('save-query-result', {
-        alias: 'r',
+        alias: 's',
         type: 'string'
     })
     .option('out', {
@@ -17,10 +17,6 @@ let argv = require('yargs/yargs')(process.argv.slice(2))
     .option('file', {
         alias: 'f',
         type: 'string'
-    })
-    .option('compare', {
-        alias: 'c',
-        type: 'boolean'
     })
     .argv;
 
@@ -86,8 +82,6 @@ function saveGeojson(fileName, data) {
 
 async function downloadOverpassData(query) {
     return new Promise(function (resolve, reject) {
-        console.log("Downloading data from Overpass API...");
-
         overpass(query, (error, result) => {
             if (error) {
                 console.error(error);
@@ -105,7 +99,7 @@ function showData(result) {
         console.log(`${key}: ${result.frequency[key]}`);
     }
 
-    console.log(`User total: ${result.userTotal} (${(result.userTotal / result.total * 100).toFixed(2)}%)`);
+    console.log(`User total: ${result.userTotal} (${(result.userTotal / result.total * 100).toFixed(2)}% of total buildings)`);
 }
 
 async function areYouSureYouWantToContinue(fileName) {
@@ -152,6 +146,8 @@ async function main() {
     else {
         let queryPersonal = fs.readFileSync('query-personal.txt', 'utf-8');
 
+        console.log("(1/2) Downloading data from Overpass API...");
+
         var data = await downloadOverpassData(queryPersonal);
 
         if (argv["save-query-result"] !== undefined) {
@@ -159,6 +155,8 @@ async function main() {
         }
 
         let queryTotal = fs.readFileSync('query-total.txt', 'utf-8');
+
+        console.log("(2/2) Downloading data from Overpass API...");
         var allBuildings = await downloadOverpassData(queryTotal);
     }
 
