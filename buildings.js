@@ -18,6 +18,10 @@ let argv = require('yargs/yargs')(process.argv.slice(2))
         alias: 'f',
         type: 'string'
     })
+    .option('compare', {
+        alias: 'c',
+        type: 'boolean'
+    })
     .argv;
 
 // Dirty fix to only use the 'out' option (or its default) if the option is present at all.
@@ -34,7 +38,7 @@ function countPolygonFrequency(dataset) {
     let frequency = {};
     let total = 0;
 
-    // Loop over all features
+    // Calculate and store the sizes of all polygons
     dataset.features.forEach(feature => {
         let polySize = countNodes(feature.geometry.coordinates)
 
@@ -47,14 +51,14 @@ function countPolygonFrequency(dataset) {
         total++;
     });
 
-    return { "total": total, "frequency": frequency };
+    return { userTotal: total, frequency: frequency };
 }
 
 // Count the nodes of one feature
 function countNodes(coordinates) {
     let nodes = 0;
     // A coordinate block contains ways as arrays. 
-    //In simple ways, it will only contain the one way the feature is composed of, in relations it will contain all the ways in the relation.
+    // In simple ways, it will only contain the one way the feature is composed of, in relations it will contain all the ways in the relation.
     coordinates.forEach(way => {
         // All ways include the 'starting' node twice, so subtract one node to correct this.
         nodes += way.length - 1;
@@ -72,7 +76,7 @@ function saveGeojson(fileName, data) {
 
     fs.writeFile(`${argv["save-query-result"]}`, json, 'utf8', (err) => {
         if (err) {
-            console.errro('\x1b[31m%s\x1b[0m', "An error occured while writing query result to file.");
+            console.error('\x1b[31m%s\x1b[0m', "An error occured while writing query result to file.");
             return console.log(err);
         }
 
@@ -87,6 +91,7 @@ async function downloadOverpassData(query) {
         overpass(query, (error, result) => {
             if (error) {
                 console.error(error);
+                reject(error);
             }
 
             resolve(result);
@@ -100,7 +105,7 @@ function showData(result) {
         console.log(`${key}: ${result.frequency[key]}`);
     }
 
-    console.log(`Total: ${result.total}`);
+    console.log(`User total: ${result.userTotal} (${(result.userTotal / result.total * 100).toFixed(2)}%)`);
 }
 
 async function areYouSureYouWantToContinue(fileName) {
@@ -145,13 +150,16 @@ async function main() {
         var data = parseJsonFromFile(argv.file);
     }
     else {
-        let query = fs.readFileSync('overpass-query.txt', 'utf-8');
+        let queryPersonal = fs.readFileSync('query-personal.txt', 'utf-8');
 
-        var data = await downloadOverpassData(query);
+        var data = await downloadOverpassData(queryPersonal);
 
         if (argv["save-query-result"] !== undefined) {
             saveGeojson(argv.save, data);
         }
+
+        let queryTotal = fs.readFileSync('query-total.txt', 'utf-8');
+        var allBuildings = await downloadOverpassData(queryTotal);
     }
 
     // Count polygons - This is where the magic happens
@@ -172,6 +180,9 @@ async function main() {
             console.log(`Results written to ${argv.out}`);
         });
     }
+
+    // Append total buildings (non-user inclusive) to result
+    result.total = allBuildings.features.length;
 
     showData(result);
 }
