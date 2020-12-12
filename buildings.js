@@ -99,7 +99,12 @@ function showData(result) {
         console.log(`${key}: ${result.frequency[key]}`);
     }
 
-    console.log(`User total: ${result.userTotal} (${(result.userTotal / result.total * 100).toFixed(2)}% of total buildings)`);
+    if (result.total) {
+        console.log(`User total: ${result.userTotal} (${(result.userTotal / result.total * 100).toFixed(2)}% of total buildings)`);
+    }
+    else {
+        console.log(`User total: ${result.userTotal}`);
+    }
 }
 
 async function areYouSureYouWantToContinue(fileName) {
@@ -180,7 +185,9 @@ async function main() {
     }
 
     // Append total buildings (non-user inclusive) to result
-    result.total = allBuildings.features.length;
+    if (allBuildings) {
+        result.total = allBuildings.features.length;
+    }
 
     showData(result);
 }
