@@ -96,7 +96,8 @@ async function downloadOverpassData(query) {
 
 function showData(result) {
     for (let key in result.frequency) {
-        console.log(`${key}: ${result.frequency[key]}`);
+        let freq = result.frequency[key]
+        console.log(`${key}: ${freq}\t${(freq / result.userTotal * 100).toFixed(2)}%`);
     }
 
     if (result.total) {
